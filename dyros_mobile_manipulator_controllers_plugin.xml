@@ -1,0 +1,7 @@
+<library path="lib/dyros_mobile_manipulator_controllers">
+  <class name="dyros_mobile_manipulator_controllers/HQPWholeBodyController" type="dyros_mobile_manipulator_controllers::HQPWholeBodyController" base_class_type="controller_interface::ControllerBase">
+    <description>
+      A controller that executes a short motion based on joint velocities to demonstrate correct usage
+    </description>
+  </class>
+</library>
