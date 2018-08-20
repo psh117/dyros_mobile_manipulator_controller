@@ -10,6 +10,7 @@
 #include <franka_hw/franka_state_interface.h>
 #include <hardware_interface/joint_command_interface.h>
 #include <hardware_interface/robot_hw.h>
+#include <franka_hw/trigger_rate.h>
 #include <ros/node_handle.h>
 #include <ros/time.h>
 #include <Eigen/Core>
@@ -45,6 +46,8 @@ class HQPWholeBodyController : public controller_interface::MultiInterfaceContro
   Eigen::Matrix<double, 7, 1> tau_ext_initial_;
   Eigen::Matrix<double, 7, 1> tau_error_;
   static constexpr double kDeltaTauMax{1.0};
+
+  franka_hw::TriggerRate rate_trigger_{10};
 };
 
 }  // namespace dyros_mobile_manipulator_controllers

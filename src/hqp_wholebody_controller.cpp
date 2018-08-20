@@ -98,24 +98,39 @@ void HQPWholeBodyController::update(const ros::Time& /*time*/, const ros::Durati
   Eigen::VectorXd tau_d(7), desired_force_torque(6), tau_cmd(7), tau_ext(7);
   desired_force_torque.setZero();
   desired_force_torque(2) = desired_mass_ * -9.81;
-  tau_ext = tau_measured - gravity - tau_ext_initial_;
+  tau_ext = - gravity;//tau_measured - gravity - tau_ext_initial_;
   tau_d << jacobian.transpose() * desired_force_torque;
   tau_error_ = tau_error_ + period.toSec() * (tau_d - tau_ext);
   // FF + PI control (PI gains are initially all 0)
-  tau_cmd = tau_d + k_p_ * (tau_d - tau_ext) + k_i_ * tau_error_;
-  tau_cmd << saturateTorqueRate(tau_cmd, tau_J_d);
+  tau_cmd = gravity;//tau_d + k_p_ * (tau_d - tau_ext) + k_i_ * tau_error_;
+  //tau_cmd << saturateTorqueRate(tau_cmd, tau_J_d);
 
   for (size_t i = 0; i < 7; ++i) {
-    joint_handles_[i].setCommand(tau_cmd(i));
+    joint_handles_[i].setCommand(0);
   }
-
+  if (rate_trigger_()) {
+    ROS_INFO("--------------------------------------------------");
+    ROS_INFO_STREAM("tau :" << tau_cmd.transpose());
+  }
   // Update signals changed online through dynamic reconfigure
   desired_mass_ = filter_gain_ * target_mass_ + (1 - filter_gain_) * desired_mass_;
   k_p_ = filter_gain_ * target_k_p_ + (1 - filter_gain_) * k_p_;
   k_i_ = filter_gain_ * target_k_i_ + (1 - filter_gain_) * k_i_;
 }
 
+Eigen::Matrix<double, 7, 1> HQPWholeBodyController::saturateTorqueRate(
+    const Eigen::Matrix<double, 7, 1>& tau_d_calculated,
+    const Eigen::Matrix<double, 7, 1>& tau_J_d) {  // NOLINT (readability-identifier-naming)
+  Eigen::Matrix<double, 7, 1> tau_d_saturated{};
+  for (size_t i = 0; i < 7; i++) {
+    double difference = tau_d_calculated[i] - tau_J_d[i];
+    tau_d_saturated[i] = tau_J_d[i] + std::max(std::min(difference, kDeltaTauMax), -kDeltaTauMax);
+  }
+  return tau_d_saturated;
+}
+
 } // namespace dyros_mobile_manipulator_controllers
+
 
 
 PLUGINLIB_EXPORT_CLASS(dyros_mobile_manipulator_controllers::HQPWholeBodyController,
