@@ -108,7 +108,7 @@ void HQPWholeBodyController::update(const ros::Time& time, const ros::Duration& 
   tau_cmd = gravity;//tau_d + k_p_ * (tau_d - tau_ext) + k_i_ * tau_error_;
   //tau_cmd << saturateTorqueRate(tau_cmd, tau_J_d);
 
-  husky_cmd_(0) = sin((time - start_time_).toSec() * 2 * M_PI / 4);
+  husky_cmd_(0) = sin((time - start_time_).toSec() * 2 * M_PI / 4) * 0.1;
   //husky_cmd_(1) = sin((time - start_time_).toSec() * 2 * M_PI / 8);
   for (size_t i = 0; i < 7; ++i) {
     joint_handles_[i].setCommand(0);
