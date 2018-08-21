@@ -3,11 +3,16 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <fstream>
 
 #include <controller_interface/multi_interface_controller.h>
 #include <dynamic_reconfigure/server.h>
 #include <franka_hw/franka_model_interface.h>
 #include <franka_hw/franka_state_interface.h>
+
+#include <franka_control/SetFullCollisionBehavior.h>
+#include <franka_control/SetForceTorqueCollisionBehavior.h>
+
 #include <hardware_interface/joint_command_interface.h>
 #include <hardware_interface/robot_hw.h>
 #include <franka_hw/trigger_rate.h>
@@ -54,9 +59,12 @@ class HQPWholeBodyController : public controller_interface::MultiInterfaceContro
   static constexpr double kDeltaTauMax{1.0};
 
   ros::Time start_time_;
+  ros::ServiceClient reflex_client_;
 
   franka_hw::TriggerRate rate_trigger_{10};
   franka_hw::TriggerRate husky_base_control_trigger_{100};
+  
+  std::ifstream input_file_;
 };
 
 }  // namespace dyros_mobile_manipulator_controllers

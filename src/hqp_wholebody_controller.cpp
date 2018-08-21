@@ -5,6 +5,7 @@
 #include <controller_interface/controller_base.h>
 #include <pluginlib/class_list_macros.h>
 #include <ros/ros.h>
+#include <ros/package.h>
 
 #include <franka/robot_state.h>
 
@@ -13,6 +14,10 @@ namespace dyros_mobile_manipulator_controllers
 
 bool HQPWholeBodyController::init(hardware_interface::RobotHW* robot_hw, ros::NodeHandle& node_handle)
 {
+  std::string dyros_controllers_path = ros::package::getPath("dyros_mobile_manipulator_controllers");
+  input_file_.open(dyros_controllers_path + "/command/input.txt");
+  reflex_client_ = node_handle.serviceClient<franka_control::SetForceTorqueCollisionBehavior>("/franka");
+
   husky_base_contrl_pub_.init(node_handle,"/cmd_vel", 4);
 	std::vector<std::string> joint_names;
   std::string arm_id;
@@ -105,17 +110,27 @@ void HQPWholeBodyController::update(const ros::Time& time, const ros::Duration& 
   tau_d << jacobian.transpose() * desired_force_torque;
   tau_error_ = tau_error_ + period.toSec() * (tau_d - tau_ext);
   // FF + PI control (PI gains are initially all 0)
-  tau_cmd = gravity;//tau_d + k_p_ * (tau_d - tau_ext) + k_i_ * tau_error_;
+  //tau_cmd = gravity;//tau_d + k_p_ * (tau_d - tau_ext) + k_i_ * tau_error_;
   //tau_cmd << saturateTorqueRate(tau_cmd, tau_J_d);
 
+  input_file_ >> tau_cmd(0) >> tau_cmd(1) >> tau_cmd(2) >> tau_cmd(3) >> tau_cmd(4) >> tau_cmd(5) >> tau_cmd(6) >>
+                husky_cmd_(0) >> husky_cmd_(1);
+
+
+  if(input_file_.eof())
+  {
+    tau_cmd.setZero();
+    husky_cmd_.setZero();
+  }
   husky_cmd_(0) = sin((time - start_time_).toSec() * 2 * M_PI / 4) * 0.1;
   //husky_cmd_(1) = sin((time - start_time_).toSec() * 2 * M_PI / 8);
   for (size_t i = 0; i < 7; ++i) {
-    joint_handles_[i].setCommand(0);
+    joint_handles_[i].setCommand(tau_cmd(i));
   }
   if (rate_trigger_()) {
     ROS_INFO("--------------------------------------------------");
     ROS_INFO_STREAM("tau :" << tau_cmd.transpose());
+    ROS_INFO_STREAM("husky :" << husky_cmd_.transpose());
   }
 
   // HUSKY CONTROl

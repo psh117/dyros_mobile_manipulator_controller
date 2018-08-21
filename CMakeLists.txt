@@ -8,12 +8,14 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   dynamic_reconfigure
   franka_hw
+  franka_control
   geometry_msgs
   hardware_interface
   pluginlib
   realtime_tools
   roscpp
   rospy
+  roslib
 )
 
 find_package(Eigen3 REQUIRED)
