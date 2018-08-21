@@ -15,7 +15,11 @@ namespace dyros_mobile_manipulator_controllers
 bool HQPWholeBodyController::init(hardware_interface::RobotHW* robot_hw, ros::NodeHandle& node_handle)
 {
   std::string dyros_controllers_path = ros::package::getPath("dyros_mobile_manipulator_controllers");
-  input_file_.open(dyros_controllers_path + "/command/input.txt");
+  std::string file_name = dyros_controllers_path + "/command/input.txt";
+
+  ROS_INFO("Openning file ... %s ", file_name.c_str());
+  input_file_.open(file_name);
+  
   reflex_client_ = node_handle.serviceClient<franka_control::SetForceTorqueCollisionBehavior>("/franka");
 
   husky_base_contrl_pub_.init(node_handle,"/cmd_vel", 4);
@@ -122,7 +126,7 @@ void HQPWholeBodyController::update(const ros::Time& time, const ros::Duration& 
     tau_cmd.setZero();
     husky_cmd_.setZero();
   }
-  husky_cmd_(0) = sin((time - start_time_).toSec() * 2 * M_PI / 4) * 0.1;
+  //husky_cmd_(0) = sin((time - start_time_).toSec() * 2 * M_PI / 4) * 0.1;
   //husky_cmd_(1) = sin((time - start_time_).toSec() * 2 * M_PI / 8);
   for (size_t i = 0; i < 7; ++i) {
     joint_handles_[i].setCommand(tau_cmd(i));
