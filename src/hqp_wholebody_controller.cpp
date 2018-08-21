@@ -13,6 +13,7 @@ namespace dyros_mobile_manipulator_controllers
 
 bool HQPWholeBodyController::init(hardware_interface::RobotHW* robot_hw, ros::NodeHandle& node_handle)
 {
+  husky_base_contrl_pub_.init(node_handle,"/cmd_vel", 4);
 	std::vector<std::string> joint_names;
   std::string arm_id;
   ROS_WARN(
@@ -73,7 +74,7 @@ bool HQPWholeBodyController::init(hardware_interface::RobotHW* robot_hw, ros::No
   return true;
 }
 
-void HQPWholeBodyController::starting(const ros::Time& /*time*/) {
+void HQPWholeBodyController::starting(const ros::Time& time) {
   franka::RobotState robot_state = state_handle_->getRobotState();
   std::array<double, 7> gravity_array = model_handle_->getGravity();
   Eigen::Map<Eigen::Matrix<double, 7, 1>> tau_measured(robot_state.tau_J.data());
@@ -81,10 +82,12 @@ void HQPWholeBodyController::starting(const ros::Time& /*time*/) {
   // Bias correction for the current external torque
   tau_ext_initial_ = tau_measured - gravity;
   tau_error_.setZero();
+  husky_cmd_.setZero();
+  start_time_ = time;
 }
 
 
-void HQPWholeBodyController::update(const ros::Time& /*time*/, const ros::Duration& period) {
+void HQPWholeBodyController::update(const ros::Time& time, const ros::Duration& period) {
   franka::RobotState robot_state = state_handle_->getRobotState();
   std::array<double, 42> jacobian_array =
       model_handle_->getZeroJacobian(franka::Frame::kEndEffector);
@@ -105,12 +108,24 @@ void HQPWholeBodyController::update(const ros::Time& /*time*/, const ros::Durati
   tau_cmd = gravity;//tau_d + k_p_ * (tau_d - tau_ext) + k_i_ * tau_error_;
   //tau_cmd << saturateTorqueRate(tau_cmd, tau_J_d);
 
+  husky_cmd_(0) = sin((time - start_time_).toSec() * 2 * M_PI / 4);
+  //husky_cmd_(1) = sin((time - start_time_).toSec() * 2 * M_PI / 8);
   for (size_t i = 0; i < 7; ++i) {
     joint_handles_[i].setCommand(0);
   }
   if (rate_trigger_()) {
     ROS_INFO("--------------------------------------------------");
     ROS_INFO_STREAM("tau :" << tau_cmd.transpose());
+  }
+
+  // HUSKY CONTROl
+  if (husky_base_control_trigger_()) {
+    if(husky_base_contrl_pub_.trylock())
+    {
+      husky_base_contrl_pub_.msg_.linear.x = husky_cmd_(0);
+      husky_base_contrl_pub_.msg_.angular.z = husky_cmd_(1);
+      husky_base_contrl_pub_.unlockAndPublish();
+    }
   }
   // Update signals changed online through dynamic reconfigure
   desired_mass_ = filter_gain_ * target_mass_ + (1 - filter_gain_) * desired_mass_;
