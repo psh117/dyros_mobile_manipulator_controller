@@ -25,18 +25,19 @@ FILE *hqp_joint_acc;
 FILE *hqp_joint_pos;
 FILE *hqp_joint_tor;
 HQP::robot::RobotModel * robot_;
-HQP::InverseDynamics * invdyn_;
-HQP::tasks::TaskJointPosture * jointTask;
+HQP::InverseDynamics * invdyn_, *invdyn2_, *invdyn_total_;
+HQP::tasks::TaskJointPosture * jointTask, * jointCTRLTask1, *jointCTRLTask2;
 HQP::tasks::TaskOperationalSpace * moveTask, * move2Task;
 HQP::tasks::TaskJointLimit * jointLimitTask, * jointLimit_Acc;
 //HQP::contact::Contact3dPoint * contactTask;
 HQP::tasks::TaskSingularityAvoidance * singularTask;
 
 HQP::trajectories::TrajectoryJointCubic * trajPosture;
-HQP::trajectories::TrajectoryJointConstant * trajPostureConstant;
+HQP::trajectories::TrajectoryJointConstant * trajPostureConstant, *trajPostureConstant2;
 HQP::trajectories::TrajectoryOperationCubic * trajEECubic;
 HQP::trajectories::TrajectoryOperationConstant * trajEEConstant;
 HQP::trajectories::TrajectoryOperationCircle * trajEECircle;
+HQP::tasks::TaskJointLimitTransition * jointlimitTransition;
 
 HQP::solver::SolverHQPBase * solver_;
 HQP::solver::SolverHQPBase * solver_2;
@@ -51,7 +52,6 @@ bool mode_change = false;
 bool HQP_flag = false;
 int ctrl_mode = 0;
 bool flag = false;
-
 
 #define time_check
 #ifdef time_check
@@ -241,7 +241,7 @@ void HQPWholeBodyController::starting(const ros::Time& time) {
 
   k_p_.setIdentity();
   k_d_.setIdentity();
-
+  joint_acc.setZero();
   mass_fake.setZero();
   
   
@@ -253,7 +253,8 @@ void HQPWholeBodyController::starting(const ros::Time& time) {
 
 
 	invdyn_ = new HQP::InverseDynamics(*robot_);
-
+	invdyn2_ = new HQP::InverseDynamics(*robot_);
+	invdyn_total_ = new HQP::InverseDynamics(*robot_);
 	// Level 0 : Joint Velocity Limit for Mobile + Manipulator 
 	q_lb = -1000.0 * VectorXd(dof).setOnes();
 	q_ub = -1.0*q_lb;
@@ -296,6 +297,19 @@ void HQPWholeBodyController::starting(const ros::Time& time) {
 
 	sampleJoint.resize(robot_->nv());
 	s.resize(12, 6);
+
+
+	// Task#2 Joint Ctrl for Initial Posture
+	jointCTRLTask2 = new tasks::TaskJointPosture("joint_control_task2", *robot_);
+	jointCTRLTask2->Kp(kp_posture*VectorXd::Ones(robot_->nv()));
+	jointCTRLTask2->Kd(1.0*jointCTRLTask2->Kp().cwiseSqrt());
+	//invdyn_->addJointPostureTask(*jointCTRLTask2, 0.0, 2, 0.0);
+
+	jointlimitTransition = new tasks::TaskJointLimitTransition("joint_transition", *robot_);
+	jointlimitTransition->Kp(400.0);
+	jointlimitTransition->Kd(pow(400.0, 0.5));
+	jointlimitTransition->setJointLimit(-10.0/180*M_PI, 10.0/180.0*M_PI, 0);
+
 
 
   solver_ = solver::SolverHQPFactory::createNewSolver(solver::SOLVER_HQP_QPOASES, "solver-eiquadprog");
@@ -440,19 +454,21 @@ void HQPWholeBodyController::update(const ros::Time& time, const ros::Duration& 
       init_q_ = joint_pos;
       start_time_ = control_time_;
       // combined task
-      // desired_q_.setZero();
-      // desired_q_(0) = 0.0/180.0*M_PI;
-      // desired_q_(1) = 30.0/180.0*M_PI;
-      // desired_q_(3) = -120.0/180.0*M_PI;
-      // desired_q_(5) = 150.0/180.0*M_PI;
-      
-
       desired_q_.setZero();
-      desired_q_(1) = -90.0/180.0*M_PI;
-      desired_q_(3) = -90.0/180.0*M_PI;
-      desired_q_(5) = 90.0/180.0*M_PI;
-      desired_q_(6) = -45.0/180.0*M_PI; 
+      desired_q_(0) = 0.0/180.0*M_PI;
+      desired_q_(1) = 30.0/180.0*M_PI;
+      desired_q_(3) = -120.0/180.0*M_PI;
+      desired_q_(5) = 150.0/180.0*M_PI;
       
+      // desired_q_.setZero();
+      // desired_q_(1) = -90.0/180.0*M_PI;
+      // desired_q_(3) = -90.0/180.0*M_PI;
+      // desired_q_(5) = 90.0/180.0*M_PI;
+      // desired_q_(6) = -45.0/180.0*M_PI; 
+      //  desired_q_.setZero();
+      //  desired_q_(1) = 30.0/180.0*M_PI;
+      //  desired_q_(3) = -120.0/180.0*M_PI;
+      //  desired_q_(5) = 150.0/180.0*M_PI;
 
     
       trajPosture = new trajectories::TrajectoryJointCubic("joint_traj");
@@ -469,16 +485,16 @@ void HQPWholeBodyController::update(const ros::Time& time, const ros::Duration& 
     jointTask->setReference(sampleJoint);
 
     const solver::HQPData &HQPData = invdyn_->computeProblemData(control_time_, joint_pos, dq_filtered_,true);
-    if (HQP_flag)      desired_q_.setZero();
-      desired_q_(0) = 0.0/180.0*M_PI;
-      desired_q_(1) = 30.0/180.0*M_PI;
-      desired_q_(3) = -120.0/180.0*M_PI;
-      desired_q_(5) = 150.0/180.0*M_PI;
+    // if (HQP_flag)      desired_q_.setZero();
+    //   desired_q_(0) = 0.0/180.0*M_PI;
+    //   desired_q_(1) = 30.0/180.0*M_PI;
+    //   desired_q_(3) = -120.0/180.0*M_PI;
+    //   desired_q_(5) = 150.0/180.0*M_PI;
 
-    {
-      cout << solver::HQPDataToString(HQPData, true) << endl;
-      HQP_flag = false;
-    }
+    // {
+    //   cout << solver::HQPDataToString(HQPData, true) << endl;
+    //   HQP_flag = false;
+    // }
 
     const solver::HQPOutput &sol = solver_->solve(HQPData);
 
@@ -561,11 +577,6 @@ void HQPWholeBodyController::update(const ros::Time& time, const ros::Duration& 
       desired_q_(3) = -120.0 / 180.0 * M_PI;
       desired_q_(5) = 150.0 / 180.0 * M_PI;
 
-      k_p_ = 100.0*k_p_;
-      k_p_(5,5) = 50.0;
-      k_p_(6,6) = 50.0;
-      k_d_ = sqrt(50.0)*k_d_;
-
       mode_change = false;
     }
 
@@ -579,15 +590,18 @@ void HQPWholeBodyController::update(const ros::Time& time, const ros::Duration& 
   }
   else if(ctrl_mode == 5){
 
-#ifdef time_check
-clock_gettime(CLOCK_MONOTONIC, &start_); /* mark start time */
-#endif	
-
+// #ifdef time_check
+// clock_gettime(CLOCK_MONOTONIC, &start_); /* mark start time */
+// #endif	
+//     ros::Duration d1;
+//     ros::Duration d2;
+//     ros::Duration d3;
     if(mode_change){
+
       double w_move = 1.0;
-      invdyn_ = new HQP::InverseDynamics(*robot_);
-      invdyn_->addOperationalTask(*moveTask, w_move, 1, 0.0);
-      invdyn_->addJointPostureTask(*jointTask, 1.0, 2, 0.0); //weight, level, duration
+     	invdyn_->addOperationalTask(*moveTask, 0.0, 1, 0.0);
+     	invdyn_->addJointPostureTask(*jointCTRLTask2, 0.0, 2, 0.0);
+	 
       goal_T = robot_->getTransformation(7);
       goal_T.translation()(1) += 0.4;
      // cout << "T_des" << Tdes.translation().transpose() << endl;
@@ -595,7 +609,7 @@ clock_gettime(CLOCK_MONOTONIC, &start_); /* mark start time */
       trajEECubic->setInitSample(robot_->getTransformation(7));
       trajEECubic->setGoalSample(goal_T);
       trajEECubic->setStartTime(control_time_);
-      trajEECubic->setDuration(10.0);
+      trajEECubic->setDuration(5.0);
       trajEECubic->setReference(goal_T);
 
       // for joint control
@@ -603,68 +617,41 @@ clock_gettime(CLOCK_MONOTONIC, &start_); /* mark start time */
       desired_q_(1) = 30.0 / 180.0 * M_PI;
       desired_q_(3) = -120.0 / 180.0 * M_PI;
       desired_q_(5) = 150.0 / 180.0 * M_PI;
-      trajPosture = new trajectories::TrajectoryJointCubic("joint_traj");
-      trajPosture->setInitSample(joint_pos);
-      trajPosture->setGoalSample(desired_q_);
-      trajPosture->setStartTime(control_time_);
-      trajPosture->setDuration(1.0);
-      trajPosture->setReference(desired_q_);
+
+	    trajPostureConstant2 = new trajectories::TrajectoryJointConstant("joint_traj_initial");
+			trajPostureConstant2->setReference(desired_q_);					
+
 
       mode_change = false;
+
     }
 
 		trajEECubic->setCurrentTime(control_time_);
 		s = trajEECubic->computeNext();
 		moveTask->setReference(s);
 
-    trajPosture->setCurrentTime(control_time_);
-    sampleJoint = trajPosture->computeNext();
-    jointTask->setReference(sampleJoint);
-
-    const solver::HQPData &HQPData = invdyn_->computeProblemData(control_time_, joint_pos, dq_filtered_, false);
-
-    if (joint_pos(0) > 5.0 /180.0*M_PI && !flag)
-    {
-
-      flag = true;
-    }
-
-    if (joint_pos(0) > 5.0 / 180.0 * M_PI)
-    {
-
-      const solver::HQPData &HQPData = invdyn_->computeProblemData(control_time_, joint_pos, dq_filtered_, false);
-      const solver::HQPOutput &sol = solver_->solve(HQPData);
+    //trajPosture->setCurrentTime(control_time_);
+    samplePosture2 = trajPostureConstant2->computeNext();
+    jointCTRLTask2->setReference(samplePosture2);
 
 
-      jointLimitTask->setPreviousSol(sol.x.head(dof));
-      jointLimitTask->setTransitionState(true);
-      invdyn_->addJointLimitTask(*jointLimitTask, 0.0, 0, 0.0);
+			if (joint_pos(0) > 5.0/180.0*M_PI && !flag) {
+					invdyn_->addJointLimitTransitionTask(*jointlimitTransition, 0.0, 0, 0.0);
+					flag = true;
+			}
+			if (joint_pos(0) > 5.0/180.0*M_PI) {
+					const solver::HQPData & HQPData = invdyn_->computeProblemData(control_time_, joint_pos, dq_filtered_,false);
+					const solver::HQPOutput & sol = solver_->solve(HQPData);
+				   joint_acc = invdyn_->getActuatorForces(sol);
+			}
+			else {
+					const solver::HQPData & HQPData = invdyn_->computeProblemData(control_time_, joint_pos, dq_filtered_,false);
+					const solver::HQPOutput & sol = solver_->solve(HQPData);
+				 joint_acc = invdyn_->getActuatorForces(sol);
+		  }
+    tau_cmd =  mass_matrix*( joint_acc ) + non_linear;
 
-      const solver::HQPData &HQPData2 = invdyn_->computeProblemData(control_time_, joint_pos, dq_filtered_, true);
-      const solver::HQPOutput &sol2 = solver_2->solve(HQPData2);
 
-      const VectorXd &tau = invdyn_->getActuatorForces(sol2);
-
-//      invdyn_->removeTask("joint_acc_limit_task");
-      //getchar();
-
-      tau_cmd =  mass_matrix * ( tau )  + non_linear ;
-    }
-    else
-    {
-      const solver::HQPOutput &sol = solver_->solve(HQPData);
-      const VectorXd &tau = invdyn_->getActuatorForces(sol);
-
-      tau_cmd =  mass_matrix * ( tau )  + non_linear ;
-    }
-#ifdef time_check
-clock_gettime(CLOCK_MONOTONIC, &end_); /* mark start time */
-diff = BILLION * (end_.tv_sec - start_.tv_sec) + end_.tv_nsec - start_.tv_nsec;
-if (cnt_  % ((int)1000 / 10) == 1){
-	cout << "milli time \t" << diff / 1000000.0 << endl;			
-}
-#endif
-  
   }
   else{
 

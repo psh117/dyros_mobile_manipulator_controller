@@ -35,6 +35,7 @@ SET(${LIBRARY_NAME}_TASK_SOURCES
     tasks/task-motion.cpp
     tasks/task-operational.cpp
     tasks/task-singualrity.cpp
+    tasks/task-transition.cpp
   )
 
 SET(${LIBRARY_NAME}_CONTACT_SOURCES

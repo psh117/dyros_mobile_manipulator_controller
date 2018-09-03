@@ -93,6 +93,7 @@ SET(${PROJECT_NAME}_TASKS_HEADERS
     include/tasks/task-operational.h
     include/tasks/task-singularity.h
     include/tasks/trajectory-base.h
+    include/tasks/task-transition.h
 )
 SET(${PROJECT_NAME}_CONSTRAINT_HEADERS
     include/constraint/constraint-base.h

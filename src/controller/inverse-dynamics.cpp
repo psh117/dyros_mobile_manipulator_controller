@@ -156,6 +156,16 @@ bool InverseDynamics::addJointLimitTask(TaskJointLimit & task, double weight, un
 
 	return true;
 }
+bool InverseDynamics::addJointLimitTransitionTask(TaskJointLimitTransition & task, double weight, unsigned int priorityLevel, double transition_duration) {
+	assert(weight >= 0.0);
+	assert(transition_duration >= 0.0);
+
+	TaskLevel *tl = new TaskLevel(task, priorityLevel);
+	m_taskMotions.push_back(tl);
+	addTask(tl, weight, priorityLevel);
+
+	return true;
+}
 bool InverseDynamics::addSingularityTask(TaskSingularityAvoidance & task, double weight, unsigned int priorityLevel, double transition_duration) {
 	assert(weight >= 0.0);
 	assert(transition_duration >= 0.0);

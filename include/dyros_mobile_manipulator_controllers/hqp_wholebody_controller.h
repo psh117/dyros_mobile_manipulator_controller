@@ -34,6 +34,7 @@
 #include "tasks/task-joint-bounds.h"
 //#include "tasks/task-mobile.h"
 #include "tasks/task-singularity.h"
+#include "tasks/task-transition.h"
 
 // for trajectories 
 #include "trajectories/trajectory-operationalspace.h"
@@ -84,6 +85,7 @@ class HQPWholeBodyController : public controller_interface::MultiInterfaceContro
   Eigen::Matrix<double, 7, 1> tau_ext_initial_;
   Eigen::Matrix<double, 7, 1> tau_error_;
   Eigen::Matrix<double, 7, 1> desired_q_;
+    Eigen::Matrix<double, 7, 1> joint_acc;
   Eigen::Matrix<double, 7, 1> cubic_q_;
   Eigen::Matrix<double, 7, 1> init_q_;
   Eigen::Matrix<double, 7, 1> q_error;
@@ -113,8 +115,7 @@ class HQPWholeBodyController : public controller_interface::MultiInterfaceContro
 	// HQP
   HQP::trajectories::TrajectorySample sampleJoint;
   HQP::trajectories::TrajectorySample s;
-
-
+  HQP::trajectories::TrajectorySample samplePosture2;
 
 
   std::ifstream input_file_;

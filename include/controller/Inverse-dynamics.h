@@ -15,6 +15,7 @@
 #include "tasks/task-joint-bounds.h"
 #include "tasks/task-mobile.h"
 #include "tasks/task-singularity.h"
+#include "tasks/task-transition.h"
 // for solvers
 #include "solvers/solver-HQP-qpoases.h"
 // for contact
@@ -68,6 +69,7 @@ namespace HQP {
 		typedef solver::HQPOutput HQPOutput;
 		typedef solver::HQPData HQPData;
 		typedef contact::ContactBase ContactBase;
+		typedef tasks::TaskJointLimitTransition TaskJointLimitTransition;
 
 		InverseDynamics(RobotModel & robot, bool verbose = false);
 		~InverseDynamics() {}
@@ -83,7 +85,7 @@ namespace HQP {
 		bool addSingularityTask(TaskSingularityAvoidance & task, double weight, unsigned int priorityLevel, double transition_duration = 0.0);
 		bool addOperationalTask(TaskSE3Equality & task, double weight, unsigned int priorityLevel, double transition_duration = 0.0);
 		bool addRigidContact(ContactBase & contact, unsigned int priorityLevel);
-
+		bool addJointLimitTransitionTask(TaskJointLimitTransition & task, double weight, unsigned int priorityLevel, double transition_duration = 0.0);
 		bool updateTaskWeight(const std::string & task_name, double weight);
 		bool removeTask(const std::string & taskName, double transition_duration = 0.0);
 		const HQPData & computeProblemData(double time,  VectorXd q, VectorXd v, bool transition);
