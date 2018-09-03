@@ -214,6 +214,8 @@ bool HQPWholeBodyController::init(hardware_interface::RobotHW* robot_hw, ros::No
   // }
 
 
+  mode_chagne_thread_ = std::thread(&HQPWholeBodyController::modeChangeReaderProc, this);
+
   return true;
 }
 
@@ -325,25 +327,26 @@ void HQPWholeBodyController::starting(const ros::Time& time) {
   // invdyn_->addJointPostureTask(*jointTask, 1.0, 2, 0.0); //weight, level, duration
 
 
-  mode_chagne_thread_ = std::thread(&HQPWholeBodyController::modeChangeReaderProc, this);
-
 }
 
 
 void HQPWholeBodyController::update(const ros::Time& time, const ros::Duration& period) {
 
-
-  if(!async_calculation_thread_.joinable())
+cout<<'1'<<endl;
+  if(calculation_mutex_.try_lock())
   {
+    calculation_mutex_.unlock();
     async_calculation_thread_ = std::thread(&HQPWholeBodyController::asyncCalculationProc, this);
   }
 
+cout<<'2'<<endl;
   ros::Rate r(30000);
   for(int i=0;i<9; i++)
   {
     r.sleep();
-    if(!async_calculation_thread_.joinable())
+    if(calculation_mutex_.try_lock())
     {
+      calculation_mutex_.unlock();
       break;
     }
   }
@@ -351,6 +354,7 @@ void HQPWholeBodyController::update(const ros::Time& time, const ros::Duration& 
     joint_handles_[i].setCommand(tau_cmd(i));
   }
 
+cout<<'3'<<endl;
   if (rate_trigger_())
   {}
   husky_cmd_.setZero();
@@ -407,8 +411,10 @@ void HQPWholeBodyController::asyncCalculationProc()
   //   mass_fake(i) = mass_matrix(i,i);
   // }
   control_time_ = cnt_/Hz_;
+cout<<'5'<<endl;
   robot_->getUpdateKinematics(joint_pos, dq_filtered_);
 
+cout<<'6'<<endl;
   ///////////// Joint Velocity - Low Pass Filter //////////////////
   double alpha = 0.99;
   for (size_t i = 0; i < 7; i++) {
@@ -426,6 +432,7 @@ void HQPWholeBodyController::asyncCalculationProc()
   Gain = 300.0*Gain;
   Gain(5,5) = 500.0;
   Gain(6,6) = 500.0;
+cout<<'7'<<endl;
   if (ctrl_mode == 0){
 
     if (mode_change)

@@ -1,5 +1,5 @@
-#include "task-transition.h"
-#include "utils.h"
+#include "tasks/task-transition.h"
+#include "utils/utils.h"
 namespace HQP
 {
 	namespace tasks
