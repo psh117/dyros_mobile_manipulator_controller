@@ -9,6 +9,7 @@
 #include <dynamic_reconfigure/server.h>
 #include <franka_hw/franka_model_interface.h>
 #include <franka_hw/franka_state_interface.h>
+#include <franka_hw/franka_cartesian_command_interface.h>
 
 #include <franka_control/SetFullCollisionBehavior.h>
 #include <franka_control/SetForceTorqueCollisionBehavior.h>
@@ -22,11 +23,42 @@
 #include <geometry_msgs/Twist.h>
 #include <Eigen/Core>
 
+//////////////////////////////////////////////////
+
+#include "controller/Inverse-dynamics.h"
+
+// for tasks
+#include "tasks/task-com.h"
+#include "tasks/task-operational.h"
+#include "tasks/task-joint-posture.h"
+#include "tasks/task-joint-bounds.h"
+//#include "tasks/task-mobile.h"
+#include "tasks/task-singularity.h"
+
+// for trajectories 
+#include "trajectories/trajectory-operationalspace.h"
+#include "trajectories/trajectory-jointspace.h"
+#include "trajectories/trajectory-base.h"
+// for solver
+
+#include "solvers/solver-HQP-factory.hxx"
+#include "solvers/solver-utils.h"
+//#include "solvers/solver-HQP-eiquadprog.h"
+#include "solvers/solver-HQP-qpoases.h"
+#include "utils/container.h"
+
+#include <string>
+#include <vector>
+#include <iomanip>
+
+
+
 namespace dyros_mobile_manipulator_controllers {
 
 class HQPWholeBodyController : public controller_interface::MultiInterfaceController<
 								   franka_hw::FrankaModelInterface,
-								   hardware_interface::EffortJointInterface,
+							   hardware_interface::EffortJointInterface,
+      //              hardware_interface::PositionJointInterface,
 								   franka_hw::FrankaStateInterface> {
                      
   bool init(hardware_interface::RobotHW* robot_hw, ros::NodeHandle& node_handle) override;
@@ -44,26 +76,47 @@ class HQPWholeBodyController : public controller_interface::MultiInterfaceContro
   std::unique_ptr<franka_hw::FrankaModelHandle> model_handle_;
   std::unique_ptr<franka_hw::FrankaStateHandle> state_handle_;
   std::vector<hardware_interface::JointHandle> joint_handles_;
+  std::vector<hardware_interface::JointHandle> position_joint_handles_;
 
-  double desired_mass_{0.0};
-  double target_mass_{0.0};
-  double k_p_{0.0};
-  double k_i_{0.0};
-  double target_k_p_{0.0};
-  double target_k_i_{0.0};
-  double filter_gain_{0.001};
+
+  double Cubic(double rT, double rT_0, double rT_f, double rx_0, double rx_dot_0, double rx_f, double rx_dot_f);
+  Eigen::Matrix<double, 7, 1> dq_filtered_;
   Eigen::Matrix<double, 7, 1> tau_ext_initial_;
   Eigen::Matrix<double, 7, 1> tau_error_;
-
+  Eigen::Matrix<double, 7, 1> desired_q_;
+  Eigen::Matrix<double, 7, 1> cubic_q_;
+  Eigen::Matrix<double, 7, 1> init_q_;
+  Eigen::Matrix<double, 7, 1> q_error;
+  Eigen::Matrix<double, 7, 1> tau_cmd;
+  Eigen::Matrix<double, 7, 7> k_p_;
+  Eigen::Matrix<double, 7, 7> k_d_;
+  Eigen::Matrix<double, 7, 1> joint_accel;
+  Eigen::Matrix<double, 7, 7> mass_fake;
   Eigen::Vector2d husky_cmd_;
-  static constexpr double kDeltaTauMax{1.0};
 
-  ros::Time start_time_;
+  Transform3d init_T;
+  Transform3d goal_T;
+
+  static constexpr double kDeltaTauMax{1.0};
+  int cnt_;
+  double control_time_;
+  double start_time_;
+  bool init_flag;
+ 
+ 
   ros::ServiceClient reflex_client_;
 
   franka_hw::TriggerRate rate_trigger_{10};
   franka_hw::TriggerRate husky_base_control_trigger_{100};
-  
+
+
+	// HQP
+  HQP::trajectories::TrajectorySample sampleJoint;
+  HQP::trajectories::TrajectorySample s;
+
+
+
+
   std::ifstream input_file_;
 };
 
