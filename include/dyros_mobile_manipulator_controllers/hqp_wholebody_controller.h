@@ -122,6 +122,28 @@ class HQPWholeBodyController : public controller_interface::MultiInterfaceContro
 
   std::ifstream input_file_;
 
+  HQP::robot::RobotModel * robot_;
+  HQP::InverseDynamics * invdyn_, *invdyn2_, *invdyn_total_;
+
+  FILE *singularity_avoidance;
+  FILE *hqp_joint_acc;
+  FILE *hqp_joint_pos;
+  FILE *hqp_joint_tor;
+  HQP::tasks::TaskJointPosture * jointTask, * jointCTRLTask1, *jointCTRLTask2;
+  HQP::tasks::TaskOperationalSpace * moveTask, * move2Task;
+  HQP::tasks::TaskJointLimit * jointLimitTask, * jointLimit_Acc;
+  //HQP::contact::Contact3dPoint * contactTask;
+  HQP::tasks::TaskSingularityAvoidance * singularTask;
+
+  HQP::trajectories::TrajectoryJointCubic * trajPosture;
+  HQP::trajectories::TrajectoryJointConstant * trajPostureConstant, *trajPostureConstant2;
+  HQP::trajectories::TrajectoryOperationCubic * trajEECubic;
+  HQP::trajectories::TrajectoryOperationConstant * trajEEConstant;
+  HQP::trajectories::TrajectoryOperationCircle * trajEECircle;
+  HQP::tasks::TaskJointLimitTransition * jointlimitTransition;
+
+  HQP::solver::SolverHQPBase * solver_;
+  HQP::solver::SolverHQPBase * solver_2;
 
   bool is_calculation_done_{false};
   std::thread mode_chagne_thread_;
@@ -130,6 +152,18 @@ class HQPWholeBodyController : public controller_interface::MultiInterfaceContro
   bool quit_all_proc_{false};
   void modeChangeReaderProc();
   void asyncCalculationProc();
+
+
+  Eigen::Matrix<double, 6, 7> jacobian_;
+  Eigen::Matrix<double, 7, 1> tau_measured_;
+  Eigen::Matrix<double, 7, 1> tau_J_d_;
+  Eigen::Matrix<double, 7, 1> gravity_;
+  Eigen::Matrix<double, 7, 7> mass_matrix_;
+  Eigen::Matrix<double, 7, 1> non_linear_;
+  Eigen::Matrix<double, 7, 1> joint_pos_;
+  Eigen::Matrix<double, 7, 1> joint_vel_;
+  Eigen::Affine3d transform_;
+  Eigen::Vector3d position_;
 };
 
 }  // namespace dyros_mobile_manipulator_controllers

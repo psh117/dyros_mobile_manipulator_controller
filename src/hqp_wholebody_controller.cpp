@@ -24,8 +24,6 @@ FILE *singularity_avoidance;
 FILE *hqp_joint_acc;
 FILE *hqp_joint_pos;
 FILE *hqp_joint_tor;
-HQP::robot::RobotModel * robot_;
-HQP::InverseDynamics * invdyn_, *invdyn2_, *invdyn_total_;
 HQP::tasks::TaskJointPosture * jointTask, * jointCTRLTask1, *jointCTRLTask2;
 HQP::tasks::TaskOperationalSpace * moveTask, * move2Task;
 HQP::tasks::TaskJointLimit * jointLimitTask, * jointLimit_Acc;
@@ -332,14 +330,49 @@ void HQPWholeBodyController::starting(const ros::Time& time) {
 
 void HQPWholeBodyController::update(const ros::Time& time, const ros::Duration& period) {
 
-cout<<'1'<<endl;
+  franka::RobotState robot_state = state_handle_->getRobotState();
+
+  std::array<double, 42> jacobian_array = model_handle_->getZeroJacobian(franka::Frame::kEndEffector);
+  std::array<double, 7> gravity_array = model_handle_->getGravity();
+  std::array<double, 49> massmatrix_array = model_handle_->getMass();
+  std::array<double, 7> coriolis_array = model_handle_->getCoriolis();
+
+  Eigen::Map<Eigen::Matrix<double, 6, 7>> jacobian(jacobian_array.data());
+  Eigen::Map<Eigen::Matrix<double, 7, 1>> tau_measured(robot_state.tau_J.data());
+  Eigen::Map<Eigen::Matrix<double, 7, 1>> tau_J_d(robot_state.tau_J_d.data());
+  Eigen::Map<Eigen::Matrix<double, 7, 1>> gravity(gravity_array.data());
+  Eigen::Map<Eigen::Matrix<double, 7, 7>> mass_matrix(massmatrix_array.data());
+  Eigen::Map<Eigen::Matrix<double, 7, 1>> non_linear(coriolis_array.data());
+  Eigen::Map<Eigen::Matrix<double, 7, 1>> joint_pos(robot_state.q.data());
+  Eigen::Map<Eigen::Matrix<double, 7, 1>> joint_vel(robot_state.dq.data());
+  Eigen::Affine3d transform(Eigen::Matrix4d::Map(robot_state.O_T_EE.data()));
+  Eigen::Vector3d position(transform.translation());
+
+  jacobian_ = jacobian;
+  tau_measured_ = tau_measured;
+  tau_J_d_ = tau_J_d;
+  gravity_ = gravity;
+  mass_matrix_ = mass_matrix;
+  non_linear_ = non_linear;
+  joint_pos_ = joint_pos;
+  joint_vel_ = joint_vel;
+  transform_ = transform;
+  position_ = position;
+
+  control_time_ = cnt_/Hz_;
+  robot_->getUpdateKinematics(joint_pos_, dq_filtered_);
+  ///////////// Joint Velocity - Low Pass Filter //////////////////
+  double alpha = 0.99;
+  for (size_t i = 0; i < 7; i++) {
+    dq_filtered_(i) = (1 - alpha) * dq_filtered_(i) + alpha * robot_state.dq[i];
+  }
+
   if(calculation_mutex_.try_lock())
   {
     calculation_mutex_.unlock();
     async_calculation_thread_ = std::thread(&HQPWholeBodyController::asyncCalculationProc, this);
   }
 
-cout<<'2'<<endl;
   ros::Rate r(30000);
   for(int i=0;i<9; i++)
   {
@@ -389,40 +422,12 @@ Eigen::Matrix<double, 7, 1> HQPWholeBodyController::saturateTorqueRate(
 void HQPWholeBodyController::asyncCalculationProc()
 {
   calculation_mutex_.lock();
-  franka::RobotState robot_state = state_handle_->getRobotState();
-
-  std::array<double, 42> jacobian_array = model_handle_->getZeroJacobian(franka::Frame::kEndEffector);
-  std::array<double, 7> gravity_array = model_handle_->getGravity();
-  std::array<double, 49> massmatrix_array = model_handle_->getMass();
-  std::array<double, 7> coriolis_array = model_handle_->getCoriolis();
-
-  Eigen::Map<Eigen::Matrix<double, 6, 7>> jacobian(jacobian_array.data());
-  Eigen::Map<Eigen::Matrix<double, 7, 1>> tau_measured(robot_state.tau_J.data());
-  Eigen::Map<Eigen::Matrix<double, 7, 1>> tau_J_d(robot_state.tau_J_d.data());
-  Eigen::Map<Eigen::Matrix<double, 7, 1>> gravity(gravity_array.data());
-  Eigen::Map<Eigen::Matrix<double, 7, 7>> mass_matrix(massmatrix_array.data());
-  Eigen::Map<Eigen::Matrix<double, 7, 1>> non_linear(coriolis_array.data());
-  Eigen::Map<Eigen::Matrix<double, 7, 1>> joint_pos(robot_state.q.data());
-  Eigen::Map<Eigen::Matrix<double, 7, 1>> joint_vel(robot_state.dq.data());
-  Eigen::Affine3d transform(Eigen::Matrix4d::Map(robot_state.O_T_EE.data()));
-  Eigen::Vector3d position(transform.translation());
   //  Eigen::Matrix3d orientation(transform.linear());
   // for(int i=0;i<dof;i++){
   //   mass_fake(i) = mass_matrix(i,i);
   // }
-  control_time_ = cnt_/Hz_;
-cout<<'5'<<endl;
-  robot_->getUpdateKinematics(joint_pos, dq_filtered_);
-
-cout<<'6'<<endl;
-  ///////////// Joint Velocity - Low Pass Filter //////////////////
-  double alpha = 0.99;
-  for (size_t i = 0; i < 7; i++) {
-    dq_filtered_(i) = (1 - alpha) * dq_filtered_(i) + alpha * robot_state.dq[i];
-  }
-
   Transform3d a =  robot_->getTransformation(7);
-  q_error = desired_q_ - joint_pos;
+  q_error = desired_q_ - joint_pos_;
 
 
   input_file_ >> desired_q_(0) >> desired_q_(1) >> desired_q_(2) >> desired_q_(3) >> desired_q_(4) >> desired_q_(5) >> desired_q_(6) ;
@@ -440,7 +445,7 @@ cout<<'7'<<endl;
       cout << "Gravity compensation" << endl;
       mode_change = false;
     }
-    tau_cmd = non_linear;
+    tau_cmd = non_linear_;
   }
   else if (ctrl_mode == 1)
   {
@@ -455,7 +460,7 @@ cout<<'7'<<endl;
       invdyn_->addJointLimitTask(*jointLimitTask, 1.0, 0, 0.0);
       invdyn_->addJointPostureTask(*jointTask, 1.0, 1, 0.0); //weight, level, duration
 
-      init_q_ = joint_pos;
+      init_q_ = joint_pos_;
       start_time_ = control_time_;
       // combined task
       desired_q_.setZero();
@@ -488,7 +493,7 @@ cout<<'7'<<endl;
     sampleJoint = trajPosture->computeNext();
     jointTask->setReference(sampleJoint);
 
-    const solver::HQPData &HQPData = invdyn_->computeProblemData(control_time_, joint_pos, dq_filtered_,true);
+    const solver::HQPData &HQPData = invdyn_->computeProblemData(control_time_, joint_pos_, dq_filtered_,true);
     // if (HQP_flag)      desired_q_.setZero();
     //   desired_q_(0) = 0.0/180.0*M_PI;
     //   desired_q_(1) = 30.0/180.0*M_PI;
@@ -503,7 +508,7 @@ cout<<'7'<<endl;
     const solver::HQPOutput &sol = solver_->solve(HQPData);
 
     const VectorXd &joint_acc = invdyn_->getActuatorForces(sol);
-    tau_cmd =  mass_matrix*( joint_acc ) + non_linear;
+    tau_cmd =  mass_matrix_*( joint_acc ) + non_linear_;
     //cout << tau_cmd.transpose() << endl;
   }
   else if(ctrl_mode == 3){
@@ -515,7 +520,7 @@ cout<<'7'<<endl;
       invdyn_->addOperationalTask(*move2Task, w_move, 1, 0.0);
       invdyn_->addJointPostureTask(*jointTask, 1.0, 2, 0.0); //weight, level, duration
 
-      init_q_ = joint_pos;
+      init_q_ = joint_pos_;
       init_T = robot_->getTransformation(7);
       //goal_T = init_T;
       //goal_T.translation()(2) += 0.3;
@@ -553,7 +558,7 @@ cout<<'7'<<endl;
     sampleJoint = trajPosture->computeNext();
     jointTask->setReference(sampleJoint);
 
-    const solver::HQPData &HQPData = invdyn_->computeProblemData(control_time_, joint_pos, dq_filtered_,true);
+    const solver::HQPData &HQPData = invdyn_->computeProblemData(control_time_, joint_pos_, dq_filtered_,true);
     if (HQP_flag)
     {
       cout << solver::HQPDataToString(HQPData, true) << endl;
@@ -565,17 +570,17 @@ cout<<'7'<<endl;
     joint_acc(4) = 3.0*joint_acc(4);
     joint_acc(5) = 3.0*joint_acc(5);
     joint_acc(6) = 3.0*joint_acc(6);
-    tau_cmd = mass_matrix * ( joint_acc )  + non_linear ;
+    tau_cmd = mass_matrix_ * ( joint_acc )  + non_linear_ ;
 
     //tau_cmd = mass_fake*joint_acc;
-    fprintf(singularity_avoidance,"%lf\t %lf\t %lf\t %lf\t %lf\t %lf\t \n",s.pos.head(3)(0),s.pos.head(3)(1),s.pos.head(3)(2),position(0),position(1),position(2));
-    fprintf(hqp_joint_pos, "%lf\t %lf\t %lf\t %lf\t %lf\t %lf\t %lf\t\n", joint_pos(0), joint_pos(1), joint_pos(2), joint_pos(3), joint_pos(4), joint_pos(5), joint_pos(6));
+    fprintf(singularity_avoidance,"%lf\t %lf\t %lf\t %lf\t %lf\t %lf\t \n",s.pos.head(3)(0),s.pos.head(3)(1),s.pos.head(3)(2),position_(0),position_(1),position_(2));
+    fprintf(hqp_joint_pos, "%lf\t %lf\t %lf\t %lf\t %lf\t %lf\t %lf\t\n", joint_pos_(0), joint_pos_(1), joint_pos_(2), joint_pos_(3), joint_pos_(4), joint_pos_(5), joint_pos_(6));
 
   }
   else if (ctrl_mode == 4){
     if(mode_change){
       start_time_ = control_time_;
-      init_q_ = joint_pos;
+      init_q_ = joint_pos_;
       desired_q_.setZero();
       desired_q_(1) = 30.0 / 180.0 * M_PI;
       desired_q_(3) = -120.0 / 180.0 * M_PI;
@@ -589,7 +594,7 @@ cout<<'7'<<endl;
       cubic_q_(i) = Cubic(control_time_ , start_time_, start_time_ + 5.0, init_q_(i), 0.0, desired_q_(i), 0.0);
     }
 
-    tau_cmd =  (k_p_*(cubic_q_ - joint_pos) - k_d_ * joint_vel) + non_linear;
+    tau_cmd =  (k_p_*(cubic_q_ - joint_pos_) - k_d_ * joint_vel_) + non_linear_;
 
   }
   else if(ctrl_mode == 5){
@@ -639,21 +644,21 @@ cout<<'7'<<endl;
     jointCTRLTask2->setReference(samplePosture2);
 
 
-    if (joint_pos(0) > 5.0/180.0*M_PI && !flag) {
+    if (joint_pos_(0) > 5.0/180.0*M_PI && !flag) {
       invdyn_->addJointLimitTransitionTask(*jointlimitTransition, 0.0, 0, 0.0);
       flag = true;
     }
-    if (joint_pos(0) > 5.0/180.0*M_PI) {
-      const solver::HQPData & HQPData = invdyn_->computeProblemData(control_time_, joint_pos, dq_filtered_,false);
+    if (joint_pos_(0) > 5.0/180.0*M_PI) {
+      const solver::HQPData & HQPData = invdyn_->computeProblemData(control_time_, joint_pos_, dq_filtered_,false);
       const solver::HQPOutput & sol = solver_->solve(HQPData);
       joint_acc = invdyn_->getActuatorForces(sol);
     }
     else {
-      const solver::HQPData & HQPData = invdyn_->computeProblemData(control_time_, joint_pos, dq_filtered_,false);
+      const solver::HQPData & HQPData = invdyn_->computeProblemData(control_time_, joint_pos_, dq_filtered_,false);
       const solver::HQPOutput & sol = solver_->solve(HQPData);
       joint_acc = invdyn_->getActuatorForces(sol);
     }
-    tau_cmd =  mass_matrix*( joint_acc ) + non_linear;
+    tau_cmd =  mass_matrix_*( joint_acc ) + non_linear_;
 
 
   }
@@ -663,7 +668,7 @@ cout<<'7'<<endl;
       cout << "Gravity compensation" << endl;
       mode_change = false;
     }
-    tau_cmd = non_linear;
+    tau_cmd = non_linear_;
   }
   calculation_mutex_.unlock();
 }
