@@ -62,8 +62,8 @@ bool flag = false;
 #define BILLION 1000000000L
 
 int localpid(void) {
- static int a[9] = { 0 };
- return a[0];
+  static int a[9] = { 0 };
+  return a[0];
 }
 uint64_t diff;
 struct timespec start_, end_;
@@ -73,19 +73,19 @@ int i;
 
 bool _kbhit()
 {
-    termios term;
-    tcgetattr(0, &term);
+  termios term;
+  tcgetattr(0, &term);
 
-    termios term2 = term;
-    term2.c_lflag &= ~ICANON;
-    tcsetattr(0, TCSANOW, &term2);
+  termios term2 = term;
+  term2.c_lflag &= ~ICANON;
+  tcsetattr(0, TCSANOW, &term2);
 
-    int byteswaiting;
-    ioctl(0, FIONREAD, &byteswaiting);
+  int byteswaiting;
+  ioctl(0, FIONREAD, &byteswaiting);
 
-    tcsetattr(0, TCSANOW, &term);
+  tcsetattr(0, TCSANOW, &term);
 
-    return byteswaiting > 0;
+  return byteswaiting > 0;
 }
 
 namespace dyros_mobile_manipulator_controllers
@@ -93,34 +93,34 @@ namespace dyros_mobile_manipulator_controllers
 using namespace HQP;
 using namespace std;
 double HQPWholeBodyController::Cubic(double rT, double rT_0, double rT_f, double rx_0, double rx_dot_0, double rx_f, double rx_dot_f)
-	{
-		double rx_t;
-		if (rT<rT_0)
-		{
-			rx_t = rx_0;
-		}
-//   if (cnt_ ==0)
-// {
+{
+  double rx_t;
+  if (rT<rT_0)
+  {
+    rx_t = rx_0;
+  }
+  //   if (cnt_ ==0)
+  // {
 
-// 	robot_ = new HQP::ro
-		else if (rT >= rT_0 && rT<rT_f)
-		{
-			rx_t = rx_0 + rx_dot_0 * (rT - rT_0)
-				+ (3 * (rx_f - rx_0) / ((rT_f - rT_0) * (rT_f - rT_0)) - 2 * rx_dot_0 / ((rT_f - rT_0) * (rT_f - rT_0)) - rx_dot_f / ((rT_f - rT_0) * (rT_f - rT_0)))*(rT - rT_0)*(rT - rT_0)
-				+ (-2 * (rx_f - rx_0) / ((rT_f - rT_0) * (rT_f - rT_0) * (rT_f - rT_0)) + (rx_dot_0 + rx_dot_f) / ((rT_f - rT_0) * (rT_f - rT_0) * (rT_f - rT_0)))*(rT - rT_0)*(rT - rT_0)*(rT - rT_0);
-		}
-		else
-		{
-			rx_t = rx_f;
-		}
-		return (rx_t);
-	}
+  // 	robot_ = new HQP::ro
+  else if (rT >= rT_0 && rT<rT_f)
+  {
+    rx_t = rx_0 + rx_dot_0 * (rT - rT_0)
+        + (3 * (rx_f - rx_0) / ((rT_f - rT_0) * (rT_f - rT_0)) - 2 * rx_dot_0 / ((rT_f - rT_0) * (rT_f - rT_0)) - rx_dot_f / ((rT_f - rT_0) * (rT_f - rT_0)))*(rT - rT_0)*(rT - rT_0)
+        + (-2 * (rx_f - rx_0) / ((rT_f - rT_0) * (rT_f - rT_0) * (rT_f - rT_0)) + (rx_dot_0 + rx_dot_f) / ((rT_f - rT_0) * (rT_f - rT_0) * (rT_f - rT_0)))*(rT - rT_0)*(rT - rT_0)*(rT - rT_0);
+  }
+  else
+  {
+    rx_t = rx_f;
+  }
+  return (rx_t);
+}
 bool HQPWholeBodyController::init(hardware_interface::RobotHW* robot_hw, ros::NodeHandle& node_handle)
 {
 
 
 
- //////////////////// HQP initial setting //////////////////////////////////
+  //////////////////// HQP initial setting //////////////////////////////////
 
   std::string dyros_controllers_path = ros::package::getPath("dyros_mobile_manipulator_controllers");
   std::string file_name = dyros_controllers_path + "/command/hqp_joint_pos_obs.txt";
@@ -136,19 +136,19 @@ bool HQPWholeBodyController::init(hardware_interface::RobotHW* robot_hw, ros::No
   reflex_client_ = node_handle.serviceClient<franka_control::SetForceTorqueCollisionBehavior>("/franka");
 
   husky_base_contrl_pub_.init(node_handle,"/cmd_vel", 4);
-	std::vector<std::string> joint_names;
+  std::vector<std::string> joint_names;
   std::string arm_id;
   ROS_WARN(
-      "ForceExampleController: Make sure your robot's endeffector is in contact "
-      "with a horizontal surface before starting the controller!");
+        "ForceExampleController: Make sure your robot's endeffector is in contact "
+        "with a horizontal surface before starting the controller!");
   if (!node_handle.getParam("arm_id", arm_id)) {
     ROS_ERROR("ForceExampleController: Could not read parameter arm_id");
     return false;
   }
   if (!node_handle.getParam("joint_names", joint_names) || joint_names.size() != 7) {
     ROS_ERROR(
-        "ForceExampleController: Invalid or no joint_names parameters provided, aborting "
-        "controller init!");
+          "ForceExampleController: Invalid or no joint_names parameters provided, aborting "
+          "controller init!");
     return false;
   }
 
@@ -159,10 +159,10 @@ bool HQPWholeBodyController::init(hardware_interface::RobotHW* robot_hw, ros::No
   }
   try {
     model_handle_ = std::make_unique<franka_hw::FrankaModelHandle>(
-        model_interface->getHandle(arm_id + "_model"));
+          model_interface->getHandle(arm_id + "_model"));
   } catch (hardware_interface::HardwareInterfaceException& ex) {
     ROS_ERROR_STREAM(
-        "ForceExampleController: Exception getting model handle from interface: " << ex.what());
+          "ForceExampleController: Exception getting model handle from interface: " << ex.what());
     return false;
   }
 
@@ -173,10 +173,10 @@ bool HQPWholeBodyController::init(hardware_interface::RobotHW* robot_hw, ros::No
   }
   try {
     state_handle_ = std::make_unique<franka_hw::FrankaStateHandle>(
-        state_interface->getHandle(arm_id + "_robot"));
+          state_interface->getHandle(arm_id + "_robot"));
   } catch (hardware_interface::HardwareInterfaceException& ex) {
     ROS_ERROR_STREAM(
-        "ForceExampleController: Exception getting state handle from interface: " << ex.what());
+          "ForceExampleController: Exception getting state handle from interface: " << ex.what());
     return false;
   }
 
@@ -212,7 +212,7 @@ bool HQPWholeBodyController::init(hardware_interface::RobotHW* robot_hw, ros::No
   //     return false;
   //   }
   // }
- 
+
 
   return true;
 }
@@ -248,75 +248,75 @@ void HQPWholeBodyController::starting(const ros::Time& time) {
   ////////////// HQP Task setting ////////////////////
 
   robot_ = new HQP::robot::RobotModel(0); // 0: Manipulator, 1: Mobile Manipulaotr, 2: humanoid
-	na = robot_->na();	
-	nv = robot_->nv();		
+  na = robot_->na();
+  nv = robot_->nv();
 
 
-	invdyn_ = new HQP::InverseDynamics(*robot_);
-	invdyn2_ = new HQP::InverseDynamics(*robot_);
-	invdyn_total_ = new HQP::InverseDynamics(*robot_);
-	// Level 0 : Joint Velocity Limit for Mobile + Manipulator 
-	q_lb = -1000.0 * VectorXd(dof).setOnes();
-	q_ub = -1.0*q_lb;
+  invdyn_ = new HQP::InverseDynamics(*robot_);
+  invdyn2_ = new HQP::InverseDynamics(*robot_);
+  invdyn_total_ = new HQP::InverseDynamics(*robot_);
+  // Level 0 : Joint Velocity Limit for Mobile + Manipulator
+  q_lb = -1000.0 * VectorXd(dof).setOnes();
+  q_ub = -1.0*q_lb;
 
-	// q_lb(0) = -10.0 * M_PI / 180.0;
-	// q_ub(0) = - q_lb(0);
+  // q_lb(0) = -10.0 * M_PI / 180.0;
+  // q_ub(0) = - q_lb(0);
 
-	double kp_jointlimit = 100.0, w_jointlimit = 1.00;
+  double kp_jointlimit = 100.0, w_jointlimit = 1.00;
 
-	jointLimit_Acc = new tasks::TaskJointLimit("joint_acc_limit_task", *robot_);
-	jointLimit_Acc->Kp(kp_jointlimit*VectorXd::Ones(robot_->nv()));
-	jointLimit_Acc->Kd(2.0*jointLimit_Acc->Kp().cwiseSqrt());
-	jointLimit_Acc->setJointLimit(q_lb, q_ub);
- 
- // q_ub(0) = 10.0/180.0*M_PI;
+  jointLimit_Acc = new tasks::TaskJointLimit("joint_acc_limit_task", *robot_);
+  jointLimit_Acc->Kp(kp_jointlimit*VectorXd::Ones(robot_->nv()));
+  jointLimit_Acc->Kd(2.0*jointLimit_Acc->Kp().cwiseSqrt());
+  jointLimit_Acc->setJointLimit(q_lb, q_ub);
+
+  // q_ub(0) = 10.0/180.0*M_PI;
 
 
-	jointLimitTask = new tasks::TaskJointLimit("joint_limit_task", *robot_);
-	jointLimitTask->Kp(kp_jointlimit*VectorXd::Ones(robot_->nv()));
-	jointLimitTask->Kd(2.0*jointLimitTask->Kp().cwiseSqrt());
-	jointLimitTask->setJointLimit(q_lb, q_ub);
+  jointLimitTask = new tasks::TaskJointLimit("joint_limit_task", *robot_);
+  jointLimitTask->Kp(kp_jointlimit*VectorXd::Ones(robot_->nv()));
+  jointLimitTask->Kd(2.0*jointLimitTask->Kp().cwiseSqrt());
+  jointLimitTask->setJointLimit(q_lb, q_ub);
 
-	jointTask = new tasks::TaskJointPosture("joint_control_task", *robot_);
+  jointTask = new tasks::TaskJointPosture("joint_control_task", *robot_);
   double kp_posture = 400.0, w_posture = 1.00;
-	jointTask->Kp(kp_posture*VectorXd::Ones(robot_->nv()));
-	jointTask->Kd(1.0*jointTask->Kp().cwiseSqrt());
+  jointTask->Kp(kp_posture*VectorXd::Ones(robot_->nv()));
+  jointTask->Kd(1.0*jointTask->Kp().cwiseSqrt());
 
-	moveTask = new tasks::TaskOperationalSpace("op_control_task", *robot_, 7);
+  moveTask = new tasks::TaskOperationalSpace("op_control_task", *robot_, 7);
   double kp_move = 460.0, w_move = 1.0;
-	VectorXd a = VectorXd::Ones(6);
+  VectorXd a = VectorXd::Ones(6);
   a.tail(3) *= 1.0;
-	moveTask->Kp(kp_move*a);
-	moveTask->Kd(1.0*moveTask->Kp().cwiseSqrt());
-	moveTask->setSingular(false);
+  moveTask->Kp(kp_move*a);
+  moveTask->Kd(1.0*moveTask->Kp().cwiseSqrt());
+  moveTask->setSingular(false);
 
-	move2Task = new tasks::TaskOperationalSpace("end_effector_task2", *robot_, 7);
-	move2Task->Kp(kp_move*a);
-	move2Task->Kd(1.0*move2Task->Kp().cwiseSqrt());
-	move2Task->setSingular(true);
+  move2Task = new tasks::TaskOperationalSpace("end_effector_task2", *robot_, 7);
+  move2Task->Kp(kp_move*a);
+  move2Task->Kd(1.0*move2Task->Kp().cwiseSqrt());
+  move2Task->setSingular(true);
 
-	sampleJoint.resize(robot_->nv());
-	s.resize(12, 6);
+  sampleJoint.resize(robot_->nv());
+  s.resize(12, 6);
 
 
-	// Task#2 Joint Ctrl for Initial Posture
-	jointCTRLTask2 = new tasks::TaskJointPosture("joint_control_task2", *robot_);
-	jointCTRLTask2->Kp(kp_posture*VectorXd::Ones(robot_->nv()));
-	jointCTRLTask2->Kd(1.0*jointCTRLTask2->Kp().cwiseSqrt());
-	//invdyn_->addJointPostureTask(*jointCTRLTask2, 0.0, 2, 0.0);
+  // Task#2 Joint Ctrl for Initial Posture
+  jointCTRLTask2 = new tasks::TaskJointPosture("joint_control_task2", *robot_);
+  jointCTRLTask2->Kp(kp_posture*VectorXd::Ones(robot_->nv()));
+  jointCTRLTask2->Kd(1.0*jointCTRLTask2->Kp().cwiseSqrt());
+  //invdyn_->addJointPostureTask(*jointCTRLTask2, 0.0, 2, 0.0);
 
-	jointlimitTransition = new tasks::TaskJointLimitTransition("joint_transition", *robot_);
-	jointlimitTransition->Kp(400.0);
-	jointlimitTransition->Kd(pow(400.0, 0.5));
-	jointlimitTransition->setJointLimit(-10.0/180*M_PI, 10.0/180.0*M_PI, 0);
+  jointlimitTransition = new tasks::TaskJointLimitTransition("joint_transition", *robot_);
+  jointlimitTransition->Kp(400.0);
+  jointlimitTransition->Kd(pow(400.0, 0.5));
+  jointlimitTransition->setJointLimit(-10.0/180*M_PI, 10.0/180.0*M_PI, 0);
 
 
 
   solver_ = solver::SolverHQPFactory::createNewSolver(solver::SOLVER_HQP_QPOASES, "solver-eiquadprog");
   solver_2 = solver::SolverHQPFactory::createNewSolver(solver::SOLVER_HQP_QPOASES, "solver-eiquadprog");
 
-	solver_->resize(invdyn_->nVar(), invdyn_->nEq(), invdyn_->nIn(), invdyn_->nBound());
-	solver_2->resize(invdyn_->nVar(), invdyn_->nEq(), invdyn_->nIn(), invdyn_->nBound());
+  solver_->resize(invdyn_->nVar(), invdyn_->nEq(), invdyn_->nIn(), invdyn_->nBound());
+  solver_2->resize(invdyn_->nVar(), invdyn_->nEq(), invdyn_->nIn(), invdyn_->nBound());
 
   // invdyn_ = new HQP::InverseDynamics(*robot_);
   // invdyn_->addJointLimitTask(*jointLimitTask, 1.0, 0, 0.0);
@@ -325,50 +325,66 @@ void HQPWholeBodyController::starting(const ros::Time& time) {
   // invdyn_->addJointPostureTask(*jointTask, 1.0, 2, 0.0); //weight, level, duration
 
 
+  mode_chagne_thread_ = std::thread(&HQPWholeBodyController::modeChangeReaderProc, this);
 
 }
 
 
 void HQPWholeBodyController::update(const ros::Time& time, const ros::Duration& period) {
 
-  if (_kbhit())
+
+  if(!async_calculation_thread_.joinable())
   {
-    int key;
-    key = getchar();
-    key = tolower(key);
-    switch (key)
+    async_calculation_thread_ = std::thread(&HQPWholeBodyController::asyncCalculationProc, this);
+  }
+
+  ros::Rate r(30000);
+  for(int i=0;i<9; i++)
+  {
+    r.sleep();
+    if(!async_calculation_thread_.joinable())
     {
-    case 'h': // for home position joint ctrl
-      ctrl_mode = 1;
-      mode_change = true;
-      HQP_flag = true;
-      break;
-    case 'i': // for init position joint ctrl
-      ctrl_mode = 2;
-      mode_change = true;
-      HQP_flag = true;
-      cout <<"111" << endl;
-      break; 
-    case 's': // for singularity task
-      ctrl_mode = 3;
-      mode_change = true;
-      HQP_flag = true;
-      break;
-    case 'd':
-      ctrl_mode = 4;
-      mode_change = true; 
-      break;
-    case 'j':
-      ctrl_mode = 5;
-      mode_change = true;
-      break; 
-    default:
-      mode_change = true;
-      ctrl_mode = 0;
       break;
     }
   }
+  for(int i=0;i<7;i++){
+    joint_handles_[i].setCommand(tau_cmd(i));
+  }
 
+  if (rate_trigger_())
+  {}
+  husky_cmd_.setZero();
+
+  // HUSKY CONTROl
+  if (husky_base_control_trigger_()) {
+    if(husky_base_contrl_pub_.trylock())
+    {
+      husky_base_contrl_pub_.msg_.linear.x = husky_cmd_(0);
+      husky_base_contrl_pub_.msg_.angular.z = husky_cmd_(1);
+      husky_base_contrl_pub_.unlockAndPublish();
+    }
+  }
+
+  cnt_++;
+
+
+}
+
+Eigen::Matrix<double, 7, 1> HQPWholeBodyController::saturateTorqueRate(
+    const Eigen::Matrix<double, 7, 1>& tau_d_calculated,
+    const Eigen::Matrix<double, 7, 1>& tau_J_d) {  // NOLINT (readability-identifier-naming)
+  Eigen::Matrix<double, 7, 1> tau_d_saturated{};
+  for (size_t i = 0; i < 7; i++) {
+    double difference = tau_d_calculated[i] - tau_J_d[i];
+    tau_d_saturated[i] = tau_J_d[i] + std::max(std::min(difference, kDeltaTauMax), -kDeltaTauMax);
+  }
+  return tau_d_saturated;
+}
+
+
+void HQPWholeBodyController::asyncCalculationProc()
+{
+  calculation_mutex_.lock();
   franka::RobotState robot_state = state_handle_->getRobotState();
 
   std::array<double, 42> jacobian_array = model_handle_->getZeroJacobian(franka::Frame::kEndEffector);
@@ -386,49 +402,30 @@ void HQPWholeBodyController::update(const ros::Time& time, const ros::Duration& 
   Eigen::Map<Eigen::Matrix<double, 7, 1>> joint_vel(robot_state.dq.data());
   Eigen::Affine3d transform(Eigen::Matrix4d::Map(robot_state.O_T_EE.data()));
   Eigen::Vector3d position(transform.translation());
-//  Eigen::Matrix3d orientation(transform.linear());
+  //  Eigen::Matrix3d orientation(transform.linear());
   // for(int i=0;i<dof;i++){
   //   mass_fake(i) = mass_matrix(i,i);
   // }
   control_time_ = cnt_/Hz_;
-	robot_->getUpdateKinematics(joint_pos, dq_filtered_);
+  robot_->getUpdateKinematics(joint_pos, dq_filtered_);
 
- ///////////////// Init & Goal Configuration Statement /////////////////////
-  // if(init_flag){
-  // init_T = robot_->getTransformation(7);
-  // goal_T = init_T;
-  // goal_T.translation()(2) += 0.3;
+  ///////////// Joint Velocity - Low Pass Filter //////////////////
+  double alpha = 0.99;
+  for (size_t i = 0; i < 7; i++) {
+    dq_filtered_(i) = (1 - alpha) * dq_filtered_(i) + alpha * robot_state.dq[i];
+  }
 
-  // // trajEECubic = new trajectories::TrajectoryOperationCubic("op_traj");
-  // // trajEECubic->setInitSample(init_T);
-  // // trajEECubic->setGoalSample(goal_T);
-  // // trajEECubic->setDuration(15.0);
-  // // trajEECubic->setStartTime(start_time_);
-  // // trajEECubic->setReference(goal_T);
+  Transform3d a =  robot_->getTransformation(7);
+  q_error = desired_q_ - joint_pos;
 
-  // // trajPosture = new trajectories::TrajectoryJointCubic("joint_traj");
-  // // trajPosture->setInitSample(init_q_);
-  // // trajPosture->setGoalSample(desired_q_);
-  // // trajPosture->setDuration(15.0);
-  // // trajPosture->setStartTime(start_time_);
-  // // trajPosture->setReference(desired_q_);
 
-  // trajEECircle = new trajectories::TrajectoryOperationCircle("opcircle_traj");
-  // trajEECircle->setInitSample(init_T);
-  // trajEECircle->setRadius(0.2);
-  // trajEECircle->setDuration(60.0);
-  // trajEECircle->setStartTime(start_time_);
-  // trajEECircle->setReference(goal_T);
-
-  // trajPosture = new trajectories::TrajectoryJointCubic("joint_traj");
-  // trajPosture->setInitSample(init_q_);
-  // trajPosture->setGoalSample(desired_q_);
-  // trajPosture->setDuration(15.0);
-  // trajPosture->setStartTime(start_time_);
-  // trajPosture->setReference(desired_q_);
-  // init_flag = false;
-  // }
-
+  input_file_ >> desired_q_(0) >> desired_q_(1) >> desired_q_(2) >> desired_q_(3) >> desired_q_(4) >> desired_q_(5) >> desired_q_(6) ;
+  MatrixXd Gain;
+  Gain.resize(7,7);
+  Gain.setIdentity();
+  Gain = 300.0*Gain;
+  Gain(5,5) = 500.0;
+  Gain(6,6) = 500.0;
   if (ctrl_mode == 0){
 
     if (mode_change)
@@ -459,25 +456,25 @@ void HQPWholeBodyController::update(const ros::Time& time, const ros::Duration& 
       desired_q_(1) = 30.0/180.0*M_PI;
       desired_q_(3) = -120.0/180.0*M_PI;
       desired_q_(5) = 150.0/180.0*M_PI;
-      
+
       // desired_q_.setZero();
       // desired_q_(1) = -90.0/180.0*M_PI;
       // desired_q_(3) = -90.0/180.0*M_PI;
       // desired_q_(5) = 90.0/180.0*M_PI;
-      // desired_q_(6) = -45.0/180.0*M_PI; 
+      // desired_q_(6) = -45.0/180.0*M_PI;
       //  desired_q_.setZero();
       //  desired_q_(1) = 30.0/180.0*M_PI;
       //  desired_q_(3) = -120.0/180.0*M_PI;
       //  desired_q_(5) = 150.0/180.0*M_PI;
 
-    
+
       trajPosture = new trajectories::TrajectoryJointCubic("joint_traj");
       trajPosture->setInitSample(init_q_);
       trajPosture->setGoalSample(desired_q_);
       trajPosture->setDuration(10.0);
       trajPosture->setStartTime(control_time_);
       trajPosture->setReference(desired_q_);
-  
+
       mode_change = false;
     }
     trajPosture->setCurrentTime(control_time_);
@@ -519,7 +516,7 @@ void HQPWholeBodyController::update(const ros::Time& time, const ros::Duration& 
       desired_q_(1) = -70.0/180.0*M_PI;
       desired_q_(3) = -160.0/180.0*M_PI;
       desired_q_(5) = 90.0/180.0*M_PI;
-  
+
 
 
       trajEECircle = new trajectories::TrajectoryOperationCircle("opcircle_traj");
@@ -562,7 +559,7 @@ void HQPWholeBodyController::update(const ros::Time& time, const ros::Duration& 
     joint_acc(5) = 3.0*joint_acc(5);
     joint_acc(6) = 3.0*joint_acc(6);
     tau_cmd = mass_matrix * ( joint_acc )  + non_linear ;
-    
+
     //tau_cmd = mass_fake*joint_acc;
     fprintf(singularity_avoidance,"%lf\t %lf\t %lf\t %lf\t %lf\t %lf\t \n",s.pos.head(3)(0),s.pos.head(3)(1),s.pos.head(3)(2),position(0),position(1),position(2));
     fprintf(hqp_joint_pos, "%lf\t %lf\t %lf\t %lf\t %lf\t %lf\t %lf\t\n", joint_pos(0), joint_pos(1), joint_pos(2), joint_pos(3), joint_pos(4), joint_pos(5), joint_pos(6));
@@ -590,21 +587,21 @@ void HQPWholeBodyController::update(const ros::Time& time, const ros::Duration& 
   }
   else if(ctrl_mode == 5){
 
-// #ifdef time_check
-// clock_gettime(CLOCK_MONOTONIC, &start_); /* mark start time */
-// #endif	
-//     ros::Duration d1;
-//     ros::Duration d2;
-//     ros::Duration d3;
+    // #ifdef time_check
+    // clock_gettime(CLOCK_MONOTONIC, &start_); /* mark start time */
+    // #endif
+    //     ros::Duration d1;
+    //     ros::Duration d2;
+    //     ros::Duration d3;
     if(mode_change){
 
       double w_move = 1.0;
-     	invdyn_->addOperationalTask(*moveTask, 0.0, 1, 0.0);
-     	invdyn_->addJointPostureTask(*jointCTRLTask2, 0.0, 2, 0.0);
-	 
+      invdyn_->addOperationalTask(*moveTask, 0.0, 1, 0.0);
+      invdyn_->addJointPostureTask(*jointCTRLTask2, 0.0, 2, 0.0);
+
       goal_T = robot_->getTransformation(7);
       goal_T.translation()(1) += 0.4;
-     // cout << "T_des" << Tdes.translation().transpose() << endl;
+      // cout << "T_des" << Tdes.translation().transpose() << endl;
       trajEECubic = new trajectories::TrajectoryOperationCubic("op_cubic");
       trajEECubic->setInitSample(robot_->getTransformation(7));
       trajEECubic->setGoalSample(goal_T);
@@ -618,162 +615,94 @@ void HQPWholeBodyController::update(const ros::Time& time, const ros::Duration& 
       desired_q_(3) = -120.0 / 180.0 * M_PI;
       desired_q_(5) = 150.0 / 180.0 * M_PI;
 
-	    trajPostureConstant2 = new trajectories::TrajectoryJointConstant("joint_traj_initial");
-			trajPostureConstant2->setReference(desired_q_);					
+      trajPostureConstant2 = new trajectories::TrajectoryJointConstant("joint_traj_initial");
+      trajPostureConstant2->setReference(desired_q_);
 
 
       mode_change = false;
 
     }
 
-		trajEECubic->setCurrentTime(control_time_);
-		s = trajEECubic->computeNext();
-		moveTask->setReference(s);
+    trajEECubic->setCurrentTime(control_time_);
+    s = trajEECubic->computeNext();
+    moveTask->setReference(s);
 
     //trajPosture->setCurrentTime(control_time_);
     samplePosture2 = trajPostureConstant2->computeNext();
     jointCTRLTask2->setReference(samplePosture2);
 
 
-			if (joint_pos(0) > 5.0/180.0*M_PI && !flag) {
-					invdyn_->addJointLimitTransitionTask(*jointlimitTransition, 0.0, 0, 0.0);
-					flag = true;
-			}
-			if (joint_pos(0) > 5.0/180.0*M_PI) {
-					const solver::HQPData & HQPData = invdyn_->computeProblemData(control_time_, joint_pos, dq_filtered_,false);
-					const solver::HQPOutput & sol = solver_->solve(HQPData);
-				   joint_acc = invdyn_->getActuatorForces(sol);
-			}
-			else {
-					const solver::HQPData & HQPData = invdyn_->computeProblemData(control_time_, joint_pos, dq_filtered_,false);
-					const solver::HQPOutput & sol = solver_->solve(HQPData);
-				 joint_acc = invdyn_->getActuatorForces(sol);
-		  }
+    if (joint_pos(0) > 5.0/180.0*M_PI && !flag) {
+      invdyn_->addJointLimitTransitionTask(*jointlimitTransition, 0.0, 0, 0.0);
+      flag = true;
+    }
+    if (joint_pos(0) > 5.0/180.0*M_PI) {
+      const solver::HQPData & HQPData = invdyn_->computeProblemData(control_time_, joint_pos, dq_filtered_,false);
+      const solver::HQPOutput & sol = solver_->solve(HQPData);
+      joint_acc = invdyn_->getActuatorForces(sol);
+    }
+    else {
+      const solver::HQPData & HQPData = invdyn_->computeProblemData(control_time_, joint_pos, dq_filtered_,false);
+      const solver::HQPOutput & sol = solver_->solve(HQPData);
+      joint_acc = invdyn_->getActuatorForces(sol);
+    }
     tau_cmd =  mass_matrix*( joint_acc ) + non_linear;
 
 
   }
   else{
-
     if (mode_change)
     {
       cout << "Gravity compensation" << endl;
       mode_change = false;
     }
     tau_cmd = non_linear;
-
   }
+  calculation_mutex_.unlock();
+}
 
-
-  ///////////// Joint Velocity - Low Pass Filter //////////////////
-  double alpha = 0.99;
-  for (size_t i = 0; i < 7; i++) {
-    dq_filtered_(i) = (1 - alpha) * dq_filtered_(i) + alpha * robot_state.dq[i];
-  }
-
-  Transform3d a =  robot_->getTransformation(7);
-  q_error = desired_q_ - joint_pos;
-
-
-/////////////// HQP solving & desired torque ////////////////////////////
-  //  const solver::HQPData &HQPData = invdyn_->computeProblemData(control_time_, joint_pos, dq_filtered_);
-  //  const solver::HQPOutput &sol = solver_->solve(HQPData);
-  //  const VectorXd &joint_acc = invdyn_->getActuatorForces(sol);
-
-
-  //  if(control_time_ == 15.0 || control_time_ == 20.0){
-  //    ROSinput_file_INFO_STREAM("end_ee1" << (goal_T.translation()- a.translation()).transpose());
-  //  }
-
-  // if (cninput_file__/1000.0 > 2.0){
-  //  inputinput_file_file_ >> tau_cmd(0) >> tau_cmd(1) >> tau_cmd(2) >> tau_cmd(3) >> tau_cmd(4) >> tau_cmd(5) >> tau_cmd(6) ;
-  //   posiinput_file_ion_joint_handles_[i].setCommand(tau_cmd(i));
-  // }
-  // else{
-  // for (size_t i = 0; i < 7; ++i) {
-  // //  joint_handles_[i].setCommand(tau_cmd(i));
-  // position_joint_handles_[i].setCommand(init_q_(i));
-  // }
-  //   }
-//   desired_q_.setZero();
-//   desired_q_(0) = 0.0/180.0*M_PI;
-//   desired_q_(1) = 30.0/180.0*M_PI;
-//   desired_q_(3) = -120.0/180.0*M_PI;
-//   desired_q_(5) = 150.0/180.0*M_PI;
-//   desired_q_(6) = -45.0/180.0*M_PI;
-
-// for(int i=0;i<7;i++)
-//  cubic_q_(i) = Cubic(cnt_, 0, 5000, init_q_(i), 0.0, desired_q_(i),0.0);
-
-  input_file_ >> desired_q_(0) >> desired_q_(1) >> desired_q_(2) >> desired_q_(3) >> desired_q_(4) >> desired_q_(5) >> desired_q_(6) ;
-  MatrixXd Gain;
-  Gain.resize(7,7);
-  Gain.setIdentity();
-  Gain = 300.0*Gain;
-  Gain(5,5) = 500.0;
-  Gain(6,6) = 500.0;
-
-  //tau_cmd = mass_matrix * (Gain* (desired_q_ -joint_pos) - 20.0*joint_vel) + non_linear;
-  //fprintf(hqp_joint_tor, "%lf\t %lf\t %lf\t %lf\t %lf\t %lf\t %lf\t\n", tau_cmd(0), tau_cmd(1), tau_cmd(2), tau_cmd(3), tau_cmd(4), tau_cmd(5), tau_cmd(6));
-
-  for(int i=0;i<7;i++){
-    joint_handles_[i].setCommand(tau_cmd(i));
-  }
-
-  // if(input_file_.eof())
-  // {
-  //   tau_cmd = joint_pos;
-  // }
-
-   if (rate_trigger_())
-   {
-   // ROS_INFO("--------------------------------------------------");
- //   ROS_INFO_STREAM("init_q : " << init_q_.transpose());
-     // ROS_INFO_STREAM("cubic_q : " << cubic_q_.transpose() );
-     // ROS_INFO_STREAM("current q :" << joint_pos.transpose());
-  //   ROS_INFO_STREAM("q error :" << q_error.transpose());
-     //cout << mass_matrix << endl;
-   //  ROS_INFO_STREAM("tau :" << tau_cmd.transpose());
-    // ROS_INFO_STREAM("husky :" << husky_cmd_.transpose());
-     //ROS_INFO_STREAM("end_ee1" << (goal_T.translation()- init_T.translation()).transpose());
-  //  ROS_INFO_STREAM("end_ee2" << (s.pos.head(3) - position).transpose());
-   // ROS_INFO_STREAM("joint acc :" << joint_accel.transpose());
-  }
- // tau_cmd.setZero();
-  //husky_cmd_(0) = sin((time - start_time_).toSec() * 2 * M_PI / 4) * 0.1;
-  //husky_cmd_(1) = sin((time - start_time_).toSec() * 2 * M_PI / 8);
- // cout << "1" << tau_cmd.transpose() <<endl;
- // cout << "2" <<joint_pos.transpose() <<endl;
- // cout << init_q_.transpose() << endl;
-  //position_joint_handles_[i].setCommand(cubic_q_(i));
-
-    husky_cmd_.setZero();
-
-  // HUSKY CONTROl
-  if (husky_base_control_trigger_()) {
-    if(husky_base_contrl_pub_.trylock())
+void HQPWholeBodyController::modeChangeReaderProc()
+{
+  while(!quit_all_proc_)
+  {
+    char key = getchar();
+    key = tolower(key);
+    calculation_mutex_.lock();
+    switch (key)
     {
-      husky_base_contrl_pub_.msg_.linear.x = husky_cmd_(0);
-      husky_base_contrl_pub_.msg_.angular.z = husky_cmd_(1);
-      husky_base_contrl_pub_.unlockAndPublish();
+    case 'h': // for home position joint ctrl
+      ctrl_mode = 1;
+      mode_change = true;
+      HQP_flag = true;
+      break;
+    case 'i': // for init position joint ctrl
+      ctrl_mode = 2;
+      mode_change = true;
+      HQP_flag = true;
+      cout <<"111" << endl;
+      break;
+    case 's': // for singularity task
+      ctrl_mode = 3;
+      mode_change = true;
+      HQP_flag = true;
+      break;
+    case 'd':
+      ctrl_mode = 4;
+      mode_change = true;
+      break;
+    case 'j':
+      ctrl_mode = 5;
+      mode_change = true;
+      break;
+    default:
+      mode_change = true;
+      ctrl_mode = 0;
+      break;
     }
+    calculation_mutex_.unlock();
   }
-
-  cnt_++;
-
-
 }
 
-Eigen::Matrix<double, 7, 1> HQPWholeBodyController::saturateTorqueRate(
-    const Eigen::Matrix<double, 7, 1>& tau_d_calculated,
-    const Eigen::Matrix<double, 7, 1>& tau_J_d) {  // NOLINT (readability-identifier-naming)
-  Eigen::Matrix<double, 7, 1> tau_d_saturated{};
-  for (size_t i = 0; i < 7; i++) {
-    double difference = tau_d_calculated[i] - tau_J_d[i];
-    tau_d_saturated[i] = tau_J_d[i] + std::max(std::min(difference, kDeltaTauMax), -kDeltaTauMax);
-  }
-  return tau_d_saturated;
-}
 
 } // namespace dyros_mobile_manipulator_controllers
 

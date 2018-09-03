@@ -5,6 +5,9 @@
 #include <vector>
 #include <fstream>
 
+#include <thread>
+#include <mutex>
+
 #include <controller_interface/multi_interface_controller.h>
 #include <dynamic_reconfigure/server.h>
 #include <franka_hw/franka_model_interface.h>
@@ -111,7 +114,6 @@ class HQPWholeBodyController : public controller_interface::MultiInterfaceContro
   franka_hw::TriggerRate rate_trigger_{10};
   franka_hw::TriggerRate husky_base_control_trigger_{100};
 
-
 	// HQP
   HQP::trajectories::TrajectorySample sampleJoint;
   HQP::trajectories::TrajectorySample s;
@@ -119,6 +121,15 @@ class HQPWholeBodyController : public controller_interface::MultiInterfaceContro
 
 
   std::ifstream input_file_;
+
+
+  bool is_calculation_done_{false};
+  std::thread mode_chagne_thread_;
+  std::thread async_calculation_thread_;
+  std::mutex calculation_mutex_;
+  bool quit_all_proc_{false};
+  void modeChangeReaderProc();
+  void asyncCalculationProc();
 };
 
 }  // namespace dyros_mobile_manipulator_controllers
