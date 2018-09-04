@@ -20,26 +20,6 @@
 
 
 
-FILE *singularity_avoidance;
-FILE *hqp_joint_acc;
-FILE *hqp_joint_pos;
-FILE *hqp_joint_tor;
-HQP::tasks::TaskJointPosture * jointTask, * jointCTRLTask1, *jointCTRLTask2;
-HQP::tasks::TaskOperationalSpace * moveTask, * move2Task;
-HQP::tasks::TaskJointLimit * jointLimitTask, * jointLimit_Acc;
-//HQP::contact::Contact3dPoint * contactTask;
-HQP::tasks::TaskSingularityAvoidance * singularTask;
-
-HQP::trajectories::TrajectoryJointCubic * trajPosture;
-HQP::trajectories::TrajectoryJointConstant * trajPostureConstant, *trajPostureConstant2;
-HQP::trajectories::TrajectoryOperationCubic * trajEECubic;
-HQP::trajectories::TrajectoryOperationConstant * trajEEConstant;
-HQP::trajectories::TrajectoryOperationCircle * trajEECircle;
-HQP::tasks::TaskJointLimitTransition * jointlimitTransition;
-
-HQP::solver::SolverHQPBase * solver_;
-HQP::solver::SolverHQPBase * solver_2;
-
 VectorXd q_lb(dof); // mobile 2 + robot 7
 VectorXd q_ub(dof); // mobile 2 + robot 7
 double Hz_ = 1000.0;
