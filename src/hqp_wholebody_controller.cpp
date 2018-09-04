@@ -350,6 +350,9 @@ void HQPWholeBodyController::update(const ros::Time& time, const ros::Duration& 
   if(calculation_mutex_.try_lock())
   {
     calculation_mutex_.unlock();
+    if(async_calculation_thread_.joinable()) 
+      async_calculation_thread_.join();
+
     async_calculation_thread_ = std::thread(&HQPWholeBodyController::asyncCalculationProc, this);
   }
 
@@ -360,6 +363,8 @@ void HQPWholeBodyController::update(const ros::Time& time, const ros::Duration& 
     if(calculation_mutex_.try_lock())
     {
       calculation_mutex_.unlock();
+      if(async_calculation_thread_.joinable()) 
+        async_calculation_thread_.join();
       break;
     }
   }
@@ -367,7 +372,7 @@ void HQPWholeBodyController::update(const ros::Time& time, const ros::Duration& 
     joint_handles_[i].setCommand(tau_cmd(i));
   }
 
-cout<<'3'<<endl;
+//cout<<'3'<<endl;
   if (rate_trigger_())
   {}
   husky_cmd_.setZero();
@@ -417,7 +422,7 @@ void HQPWholeBodyController::asyncCalculationProc()
   Gain = 300.0*Gain;
   Gain(5,5) = 500.0;
   Gain(6,6) = 500.0;
-cout<<'7'<<endl;
+  //cout<<'7'<<endl;
   if (ctrl_mode == 0){
 
     if (mode_change)
@@ -650,6 +655,7 @@ cout<<'7'<<endl;
     }
     tau_cmd = non_linear_;
   }
+  //cout<<'8'<<endl;
   calculation_mutex_.unlock();
 }
 
@@ -673,6 +679,7 @@ void HQPWholeBodyController::modeChangeReaderProc()
       HQP_flag = true;
       cout <<"111" << endl;
       break;
+    case '\r':
     case 's': // for singularity task
       ctrl_mode = 3;
       mode_change = true;
@@ -685,6 +692,9 @@ void HQPWholeBodyController::modeChangeReaderProc()
     case 'j':
       ctrl_mode = 5;
       mode_change = true;
+      break;
+    case '\n':
+    case '\r':
       break;
     default:
       mode_change = true;
